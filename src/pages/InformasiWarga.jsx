@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
-import { collection, query, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, orderBy, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, appId } from '../lib/firebase';
 
@@ -13,10 +13,12 @@ const InformasiWarga = ({ userId, isAdmin }) => {
     useEffect(() => {
         if (!userId) return;
         const infoCollectionRef = collection(db, `artifacts/${appId}/public/data/informasi`);
-        const q = query(infoCollectionRef);
+        // Limit to latest 20 posts for performance with 450+ families
+        const q = query(infoCollectionRef, orderBy('timestamp', 'desc'), limit(20));
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const infoData = [];
             querySnapshot.forEach((doc) => { infoData.push({ id: doc.id, ...doc.data() }); });
+            // Sort client-side redundant if query ordered, but safe to keep for consistency
             infoData.sort((a, b) => (b.timestamp?.toDate() || 0) - (a.timestamp?.toDate() || 0));
             setPosts(infoData);
         }, (error) => console.error("Kesalahan listener informasi:", error));

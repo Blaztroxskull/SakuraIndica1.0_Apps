@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, onSnapshot, addDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, orderBy, limit } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 
 const ForumKomunitas = ({ userId }) => {
@@ -10,10 +10,13 @@ const ForumKomunitas = ({ userId }) => {
     useEffect(() => {
         if (!userId) return;
         const forumCollectionRef = collection(db, `artifacts/${appId}/public/data/forum`);
-        const q = query(forumCollectionRef);
+        // Optimized for 2000+ users: Get last 50 messages only
+        const q = query(forumCollectionRef, orderBy('timestamp', 'desc'), limit(50));
+
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const msgs = [];
             querySnapshot.forEach((doc) => { msgs.push({ id: doc.id, ...doc.data() }); });
+            // Sort ascending for chat display (oldest at top)
             msgs.sort((a, b) => (a.timestamp?.toDate() || 0) - (b.timestamp?.toDate() || 0));
             setMessages(msgs);
         }, (error) => console.error("Kesalahan listener forum:", error));
