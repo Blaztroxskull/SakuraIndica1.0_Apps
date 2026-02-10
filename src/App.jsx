@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Siren } from 'lucide-react';
 import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { db, auth, appId } from './lib/firebase';
 
 import Sidebar from './components/Sidebar';
@@ -22,8 +23,7 @@ import DKM from './pages/DKM';
 import Rohani from './pages/Rohani';
 import Pengaturan from './pages/Pengaturan';
 
-const App = () => {
-    const [currentPage, setCurrentPage] = useState('dashboard');
+const AppContent = () => {
     const [user, setUser] = useState(null);
     const [userRole, setUserRole] = useState(null);
     const [userSubRole, setUserSubRole] = useState(null);
@@ -36,6 +36,7 @@ const App = () => {
     const [showPanicConfirm, setShowPanicConfirm] = useState(false);
     const [logoUrl, setLogoUrl] = useState("https://storage.googleapis.com/gemini-prod-us-west1-assets/e1889b153a79ec7ef10c79b5c3453a29");
     const audioRef = useRef(null);
+    const location = useLocation();
 
     useEffect(() => {
         const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
@@ -107,27 +108,6 @@ const App = () => {
         return () => { unsubscribePanic(); unsubscribeLogo(); };
     }, [isAuthReady]);
 
-    const renderPage = () => {
-        if (!isAuthReady) {
-            return <div className="flex justify-center items-center h-full"><div className="text-lg font-semibold">Memuat Aplikasi...</div></div>;
-        }
-        switch (currentPage) {
-            case 'dashboard': return <Dashboard isDemo={isDemo} />;
-            case 'registrasi': return <RegistrasiWarga userId={user?.uid} isDemo={isDemo} />;
-            case 'surat': return <LayananSurat userId={user?.uid} isDemo={isDemo} />;
-            case 'keuangan': return <LaporanKeuangan isAdmin={isAdmin} isDemo={isDemo} />;
-            case 'informasi': return <InformasiWarga userId={user?.uid} isAdmin={isAdmin} isDemo={isDemo} />;
-            case 'pengaturan': return isAdmin ? <Pengaturan isDemo={isDemo} setIsDemo={setIsDemo} /> : <div className="text-center p-8"><h2 className="text-2xl font-bold text-red-500">Akses Ditolak</h2><p className="text-gray-600 mt-2">Anda tidak memiliki izin untuk mengakses halaman ini.</p></div>;
-            case 'marketplace': return <Marketplace userId={user?.uid} isDemo={isDemo} />;
-            case 'saluran': return <SaluranKomunitas isDemo={isDemo} />;
-            case 'keamanan': return <KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} userId={user?.uid} isAdmin={isAdmin} subRole={userSubRole} isDemo={isDemo} />;
-            case 'aduan': return <KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} userId={user?.uid} isAdmin={isAdmin} subRole={userSubRole} isDemo={isDemo} />;
-            case 'fasum': return <Fasum subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />;
-            case 'dkm': return <DKM subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />;
-            case 'rohani': return <Rohani subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />;
-            default: return <Dashboard isDemo={isDemo} />;
-        }
-    };
 
     const confirmAndTriggerPanic = async () => {
         setShowPanicConfirm(false);
@@ -174,6 +154,10 @@ const App = () => {
         }
     };
 
+    if (!isAuthReady) {
+        return <div className="flex justify-center items-center h-screen"><div className="text-lg font-semibold">Memuat Aplikasi...</div></div>;
+    }
+
     return (
         <div className="bg-gray-100 font-sans min-h-screen flex flex-col md:flex-row relative">
             <FallingSakura active={true} />
@@ -194,8 +178,6 @@ const App = () => {
                 </div>
             )}
             <Sidebar
-                navigate={setCurrentPage}
-                currentPage={currentPage}
                 isAdmin={isAdmin}
                 logoUrl={logoUrl}
                 user={user}
@@ -205,9 +187,33 @@ const App = () => {
             />
             <main className="flex-1 p-4 md:p-8 overflow-y-auto">
                 <Header userId={user?.uid} onAdminClick={handleAdminClick} isAdmin={isAdmin} />
-                {renderPage()}
+                <Routes>
+                    <Route path="/" element={<Dashboard isDemo={isDemo} />} />
+                    <Route path="/dashboard" element={<Dashboard isDemo={isDemo} />} />
+                    <Route path="/registrasi" element={<RegistrasiWarga userId={user?.uid} isDemo={isDemo} />} />
+                    <Route path="/surat" element={<LayananSurat userId={user?.uid} isDemo={isDemo} />} />
+                    <Route path="/keuangan" element={<LaporanKeuangan isAdmin={isAdmin} isDemo={isDemo} />} />
+                    <Route path="/informasi" element={<InformasiWarga userId={user?.uid} isAdmin={isAdmin} isDemo={isDemo} />} />
+                    <Route path="/marketplace" element={<Marketplace userId={user?.uid} isDemo={isDemo} />} />
+                    <Route path="/saluran" element={<SaluranKomunitas isDemo={isDemo} />} />
+                    <Route path="/keamanan" element={<KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} userId={user?.uid} isAdmin={isAdmin} subRole={userSubRole} isDemo={isDemo} />} />
+                    <Route path="/aduan" element={<KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} userId={user?.uid} isAdmin={isAdmin} subRole={userSubRole} isDemo={isDemo} />} />
+                    <Route path="/fasum" element={<Fasum subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />} />
+                    <Route path="/dkm" element={<DKM subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />} />
+                    <Route path="/rohani" element={<Rohani subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />} />
+                    <Route path="/pengaturan" element={isAdmin ? <Pengaturan isDemo={isDemo} setIsDemo={setIsDemo} /> : <div className="text-center p-8"><h2 className="text-2xl font-bold text-red-500">Akses Ditolak</h2><p className="text-gray-600 mt-2">Anda tidak memiliki izin untuk mengakses halaman ini.</p></div>} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
             </main>
         </div>
+    );
+};
+
+const App = () => {
+    return (
+        <Router>
+            <AppContent />
+        </Router>
     );
 };
 

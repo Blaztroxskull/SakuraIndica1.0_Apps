@@ -4,9 +4,11 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/setupTests.js',
+  build: {
+    outDir: 'dist',
+    chunkSizeWarningLimit: 1000,
   },
+  server: {
+    historyApiFallback: true, // For dev server routing
+  }
 })

@@ -3,11 +3,9 @@
 > vite
 
 Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
 
-  VITE v5.4.21  ready in 289 ms
+  VITE v5.4.21  ready in 327 ms
 
-  ➜  Local:   http://localhost:5174/
+  ➜  Local:   http://localhost:5175/
   ➜  Network: use --host to expose
-7:41:12 AM [vite] hmr update /src/pages/Pengaturan.jsx, /src/index.css
-7:43:13 AM [vite] hmr update /src/pages/Marketplace.jsx, /src/index.css
-7:43:19 AM [vite] hmr update /src/pages/Marketplace.jsx, /src/index.css

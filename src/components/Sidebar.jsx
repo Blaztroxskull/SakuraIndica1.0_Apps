@@ -1,35 +1,42 @@
 import React from 'react';
 import { Home, FileText, Bell, Users, ShoppingBag, Shield, Landmark, Settings, UserPlus, LogOut, Tent, BookOpen, MessageCircle } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
-const Sidebar = ({ navigate, currentPage, isAdmin, role, subRole, user, logoUrl, onLogout }) => {
+const Sidebar = ({ isAdmin, role, subRole, user, logoUrl, onLogout }) => {
+    const navigate = useNavigate();
+    const location = useLocation();
+
     // Determine display role
     const displayRole = isAdmin ? 'Super Administrator' : (role || 'Warga');
     const displaySub = isAdmin ? 'System Owner' : (subRole ? subRole.charAt(0).toUpperCase() + subRole.slice(1) : (user?.displayName || 'Resident'));
 
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: Home, adminOnly: false },
-        { id: 'surat', label: 'Administrasi', icon: FileText, adminOnly: false },
-        { id: 'registrasi', label: 'Data Warga', icon: UserPlus, adminOnly: false },
-        { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, adminOnly: false },
-        { id: 'keuangan', label: 'Keuangan', icon: Landmark, adminOnly: false },
-        { id: 'informasi', label: 'Komunitas (Berita)', icon: Bell, adminOnly: false }, // "Komunitas: Difokuskan untuk pengumuman"
-        { id: 'fasum', label: 'Fasilitas Umum', icon: Tent, adminOnly: false }, // New
-        { id: 'dkm', label: 'DKM Masjid', icon:  Users, adminOnly: false }, // New
-        { id: 'rohani', label: 'Kerohanian', icon: BookOpen, adminOnly: false }, // New
-        { id: 'aduan', label: 'Saran & Pengaduan', icon: Shield, adminOnly: false }, // Renamed from Keamanan
-        { id: 'saluran', label: 'Saluran Komunitas', icon: MessageCircle, adminOnly: false },
-        { id: 'pengaturan', label: 'Pengaturan', icon: Settings, adminOnly: true },
+        { id: '/dashboard', label: 'Dashboard', icon: Home, adminOnly: false },
+        { id: '/surat', label: 'Administrasi', icon: FileText, adminOnly: false },
+        { id: '/registrasi', label: 'Data Warga', icon: UserPlus, adminOnly: false },
+        { id: '/marketplace', label: 'Marketplace', icon: ShoppingBag, adminOnly: false },
+        { id: '/keuangan', label: 'Keuangan', icon: Landmark, adminOnly: false },
+        { id: '/informasi', label: 'Komunitas (Berita)', icon: Bell, adminOnly: false },
+        { id: '/fasum', label: 'Fasilitas Umum', icon: Tent, adminOnly: false },
+        { id: '/dkm', label: 'DKM Masjid', icon: Users, adminOnly: false },
+        { id: '/rohani', label: 'Kerohanian', icon: BookOpen, adminOnly: false },
+        { id: '/aduan', label: 'Saran & Pengaduan', icon: Shield, adminOnly: false },
+        { id: '/saluran', label: 'Saluran Komunitas', icon: MessageCircle, adminOnly: false },
+        { id: '/pengaturan', label: 'Pengaturan', icon: Settings, adminOnly: true },
     ];
 
-    const NavLink = ({ id, label, icon: Icon }) => (
-        <button
-            onClick={() => navigate(id)}
-            className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${currentPage === id ? 'bg-pink-500 text-white shadow-lg' : 'text-gray-600 hover:bg-pink-100 hover:text-pink-600'}`}
-        >
-            <Icon size={20} className="mr-4" />
-            <span className="font-medium">{label}</span>
-        </button>
-    );
+    const NavLink = ({ id, label, icon: Icon }) => {
+        const isActive = location.pathname === id || (id === '/dashboard' && location.pathname === '/');
+        return (
+            <button
+                onClick={() => navigate(id)}
+                className={`flex items-center w-full text-left px-4 py-3 rounded-lg transition-colors duration-200 ${isActive ? 'bg-pink-500 text-white shadow-lg' : 'text-gray-600 hover:bg-pink-100 hover:text-pink-600'}`}
+            >
+                <Icon size={20} className="mr-4" />
+                <span className="font-medium">{label}</span>
+            </button>
+        );
+    };
 
     return (
         <aside className="bg-white w-full md:w-64 flex flex-col shadow-xl md:min-h-screen z-10">
