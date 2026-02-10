@@ -3,14 +3,20 @@ import { Download } from 'lucide-react';
 import { collection, query, onSnapshot, addDoc, orderBy, limit } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, appId } from '../lib/firebase';
+import { dummyInfo } from '../lib/dummyData';
 
-const InformasiWarga = ({ userId, isAdmin }) => {
+const InformasiWarga = ({ userId, isAdmin, isDemo }) => {
     const [posts, setPosts] = useState([]);
     const [newPost, setNewPost] = useState('');
     const [attachmentFile, setAttachmentFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
+        if (isDemo) {
+            setPosts(dummyInfo);
+            return;
+        }
+
         if (!userId) return;
         const infoCollectionRef = collection(db, `artifacts/${appId}/public/data/informasi`);
         // Limit to latest 20 posts for performance with 450+ families
@@ -23,7 +29,7 @@ const InformasiWarga = ({ userId, isAdmin }) => {
             setPosts(infoData);
         }, (error) => console.error("Kesalahan listener informasi:", error));
         return () => unsubscribe();
-    }, [userId]);
+    }, [userId, isDemo]);
 
     const handlePostSubmit = async (e) => {
         e.preventDefault();

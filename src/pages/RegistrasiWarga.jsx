@@ -5,7 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, appId } from '../lib/firebase';
 import FileUpload from '../components/FileUpload';
 
-const RegistrasiWarga = ({ userId }) => {
+const RegistrasiWarga = ({ userId, isDemo }) => {
     const [formData, setFormData] = useState({ namaLengkap: '', alamatKTP: '', alamatCluster: '', telepon: ['', '', ''], email: '', statusKawin: 'lajang', agama: '', pekerjaan: '', anggotaKeluarga: [], statusMenetap: 'menetap', statusRumah: 'pribadi', infoSewa: { durasi: '', namaPemilik: '', hpPemilik: '' }, kendaraan: [], hobi: '', kontakDarurat: { nama: '', hubungan: '', telepon: '' } });
     const [ktpFile, setKtpFile] = useState(null);
     const [kkFile, setKkFile] = useState(null);
@@ -25,6 +25,15 @@ const RegistrasiWarga = ({ userId }) => {
         if (!formData.namaLengkap || !formData.alamatCluster || !formData.email) { setError('Mohon isi kolom yang wajib diisi (Nama, Alamat Cluster, Email).'); return; }
         if (!ktpFile || !kkFile) { setError('Mohon lampirkan foto KTP dan Kartu Keluarga.'); return; }
         setIsLoading(true); setError('');
+
+        if (isDemo) {
+            setTimeout(() => {
+                setIsSuccess(true);
+                setIsLoading(false);
+            }, 1000);
+            return;
+        }
+
         try {
             const ktpStorageRef = ref(storage, `registrations/${userId}/ktp_${Date.now()}_${ktpFile.name}`);
             await uploadBytes(ktpStorageRef, ktpFile);

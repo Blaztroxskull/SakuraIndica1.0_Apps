@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Siren } from 'lucide-react';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { db, auth, appId } from './lib/firebase';
 
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { AdminLoginModal, ConfirmationModal } from './components/Modals';
+import FallingSakura from './components/FallingSakura';
 
 import Dashboard from './pages/Dashboard';
 import RegistrasiWarga from './pages/RegistrasiWarga';
@@ -21,6 +22,8 @@ import Pengaturan from './pages/Pengaturan';
 const App = () => {
     const [currentPage, setCurrentPage] = useState('dashboard');
     const [user, setUser] = useState(null);
+    const [userRole, setUserRole] = useState(null);
+    const [isDemo, setIsDemo] = useState(false);
     const [isAuthReady, setIsAuthReady] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -34,7 +37,25 @@ const App = () => {
         const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
-                setIsAdmin(!currentUser.isAnonymous);
+                const isAnonymous = currentUser.isAnonymous;
+                setIsAdmin(!isAnonymous);
+
+                if (!isAnonymous) {
+                     // Try to fetch specific role from Firestore if exists
+                     try {
+                         const userDoc = await getDoc(doc(db, `users`, currentUser.uid));
+                         if (userDoc.exists()) {
+                             setUserRole(userDoc.data().role);
+                         } else {
+                             setUserRole('Administrator');
+                         }
+                     } catch (e) {
+                         console.error("Error fetching user role:", e);
+                         setUserRole('Administrator');
+                     }
+                } else {
+                    setUserRole('Warga');
+                }
             } else {
                 try {
                     // Check for custom token in global scope if injected, otherwise anonymous
@@ -83,21 +104,29 @@ const App = () => {
             return <div className="flex justify-center items-center h-full"><div className="text-lg font-semibold">Memuat Aplikasi...</div></div>;
         }
         switch (currentPage) {
-            case 'dashboard': return <Dashboard />;
-            case 'registrasi': return <RegistrasiWarga userId={user?.uid} />;
-            case 'surat': return <LayananSurat userId={user?.uid} />;
-            case 'keuangan': return <LaporanKeuangan isAdmin={isAdmin} />;
-            case 'informasi': return <InformasiWarga userId={user?.uid} isAdmin={isAdmin} />;
-            case 'pengaturan': return isAdmin ? <Pengaturan /> : <div className="text-center p-8"><h2 className="text-2xl font-bold text-red-500">Akses Ditolak</h2><p className="text-gray-600 mt-2">Anda tidak memiliki izin untuk mengakses halaman ini.</p></div>;
-            case 'forum': return <ForumKomunitas userId={user?.uid} />;
-            case 'saluran': return <SaluranKomunitas />;
-            case 'keamanan': return <KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} />;
-            default: return <Dashboard />;
+            case 'dashboard': return <Dashboard isDemo={isDemo} />;
+            case 'registrasi': return <RegistrasiWarga userId={user?.uid} isDemo={isDemo} />;
+            case 'surat': return <LayananSurat userId={user?.uid} isDemo={isDemo} />;
+            case 'keuangan': return <LaporanKeuangan isAdmin={isAdmin} isDemo={isDemo} />;
+            case 'informasi': return <InformasiWarga userId={user?.uid} isAdmin={isAdmin} isDemo={isDemo} />;
+            case 'pengaturan': return isAdmin ? <Pengaturan isDemo={isDemo} setIsDemo={setIsDemo} /> : <div className="text-center p-8"><h2 className="text-2xl font-bold text-red-500">Akses Ditolak</h2><p className="text-gray-600 mt-2">Anda tidak memiliki izin untuk mengakses halaman ini.</p></div>;
+            case 'forum': return <ForumKomunitas userId={user?.uid} isDemo={isDemo} />;
+            case 'saluran': return <SaluranKomunitas isDemo={isDemo} />;
+            case 'keamanan': return <KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} isDemo={isDemo} />;
+            default: return <Dashboard isDemo={isDemo} />;
         }
     };
 
     const confirmAndTriggerPanic = async () => {
         setShowPanicConfirm(false);
+
+        if (isDemo) {
+            setPanicInfo({ active: true, triggeredBy: 'DemoUser', location: 'Lokasi Demo', timestamp: { toDate: () => new Date() } });
+            setIsPanicMode(true);
+            audioRef.current?.play().catch(e => console.error("Audio play failed:", e));
+            return;
+        }
+
         if (!user) { console.error("Otentikasi gagal."); return; }
         const panicRef = doc(db, `artifacts/${appId}/public/data/panic`, 'status');
         if (navigator.geolocation) {
@@ -113,6 +142,13 @@ const App = () => {
     };
 
     const stopPanic = async () => {
+        if (isDemo) {
+            setIsPanicMode(false);
+            setPanicInfo(null);
+            audioRef.current?.pause();
+            if(audioRef.current) audioRef.current.currentTime = 0;
+            return;
+        }
         await setDoc(doc(db, `artifacts/${appId}/public/data/panic`, 'status'), { active: false });
     };
 
@@ -127,7 +163,8 @@ const App = () => {
     };
 
     return (
-        <div className="bg-gray-100 font-sans min-h-screen flex flex-col md:flex-row">
+        <div className="bg-gray-100 font-sans min-h-screen flex flex-col md:flex-row relative">
+            <FallingSakura active={true} />
             <audio ref={audioRef} src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" loop />
             <AdminLoginModal show={showAdminLogin} onClose={() => setShowAdminLogin(false)} />
             <ConfirmationModal show={showPanicConfirm} onClose={() => setShowPanicConfirm(false)} onConfirm={confirmAndTriggerPanic} title="Konfirmasi Tindakan Darurat" message="Anda akan mengaktifkan sinyal S.O.S. Ini hanya untuk keadaan darurat nyata. Lanjutkan?" />
@@ -144,7 +181,15 @@ const App = () => {
                     <button onClick={stopPanic} className="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600">Keadaan Aman (Nonaktifkan Sinyal)</button>
                 </div>
             )}
-            <Sidebar navigate={setCurrentPage} currentPage={currentPage} isAdmin={isAdmin} logoUrl={logoUrl} />
+            <Sidebar
+                navigate={setCurrentPage}
+                currentPage={currentPage}
+                isAdmin={isAdmin}
+                logoUrl={logoUrl}
+                user={user}
+                role={userRole}
+                onLogout={handleAdminClick}
+            />
             <main className="flex-1 p-4 md:p-8 overflow-y-auto">
                 <Header userId={user?.uid} onAdminClick={handleAdminClick} isAdmin={isAdmin} />
                 {renderPage()}

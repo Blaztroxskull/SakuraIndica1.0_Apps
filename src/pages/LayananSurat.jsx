@@ -4,7 +4,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, appId } from '../lib/firebase';
 
-const LayananModal = ({ service, onClose, userId }) => {
+const LayananModal = ({ service, onClose, userId, isDemo }) => {
     if (!service) return null;
     const [file, setFile] = useState(null);
     const [notes, setNotes] = useState('');
@@ -27,6 +27,15 @@ const LayananModal = ({ service, onClose, userId }) => {
         e.preventDefault();
         if (!file) { setError('Mohon lampirkan dokumen pendukung.'); return; }
         setIsLoading(true); setError('');
+
+        if (isDemo) {
+            setTimeout(() => {
+                setIsSuccess(true);
+                setIsLoading(false);
+            }, 1000);
+            return;
+        }
+
         try {
             const storageRef = ref(storage, `attachments/${userId}/${Date.now()}_${file.name}`);
             await uploadBytes(storageRef, file);
@@ -109,7 +118,7 @@ const LayananModal = ({ service, onClose, userId }) => {
     );
 };
 
-const LayananSurat = ({ userId }) => {
+const LayananSurat = ({ userId, isDemo }) => {
     const [selectedService, setSelectedService] = useState(null);
     const suratList = [
         { name: 'Surat Pengantar (Umum)', icon: FileText, docs: 'KTP, Kartu Keluarga, dan dokumen pendukung.' },
@@ -119,7 +128,7 @@ const LayananSurat = ({ userId }) => {
     ];
 
     const handleServiceClick = (service) => {
-        if (!userId) {
+        if (!userId && !isDemo) {
             alert("Gagal mendapatkan ID pengguna. Mohon muat ulang halaman.");
             return;
         }
@@ -128,7 +137,7 @@ const LayananSurat = ({ userId }) => {
 
     return (
         <>
-            {selectedService && <LayananModal service={selectedService} onClose={() => setSelectedService(null)} userId={userId} />}
+            {selectedService && <LayananModal service={selectedService} onClose={() => setSelectedService(null)} userId={userId} isDemo={isDemo} />}
             <div className="bg-white p-8 rounded-xl shadow-md">
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">Layanan Administrasi Warga</h2>
                 <p className="text-gray-600 mb-6">Pilih jenis layanan yang Anda butuhkan. Anda dapat langsung melampirkan dokumen pendukung melalui aplikasi.</p>

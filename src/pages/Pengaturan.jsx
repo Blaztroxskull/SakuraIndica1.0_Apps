@@ -3,7 +3,7 @@ import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, appId } from '../lib/firebase';
 
-const Pengaturan = () => {
+const Pengaturan = ({ isDemo, setIsDemo }) => {
     const [logoFile, setLogoFile] = useState(null);
     const [cctvLink, setCctvLink] = useState('');
     const [isLoading, setIsLoading] = useState({logo: false, cctv: false});
@@ -98,6 +98,19 @@ const Pengaturan = () => {
                     </button>
                 </div>
                  {message.cctv && <p className={`mt-4 text-sm ${message.cctv.includes('Gagal') ? 'text-red-600' : 'text-green-600'}`}>{message.cctv}</p>}
+            </div>
+
+            <div className="p-6 border rounded-lg bg-yellow-50 border-yellow-200">
+                <h3 className="text-xl font-semibold mb-2 text-yellow-800">Mode Demo</h3>
+                <p className="text-yellow-700 mb-4">Aktifkan mode demo untuk melihat data dummy tanpa terhubung ke database langsung.</p>
+                <div className="flex items-center space-x-4">
+                    <button
+                        onClick={() => setIsDemo(!isDemo)}
+                        className={`px-6 py-2 font-semibold rounded-lg transition-colors ${isDemo ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+                    >
+                        {isDemo ? 'Nonaktifkan Mode Demo' : 'Aktifkan Mode Demo'}
+                    </button>
+                </div>
             </div>
         </div>
     );

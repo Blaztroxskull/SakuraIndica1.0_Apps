@@ -1,13 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, onSnapshot, addDoc, orderBy, limit } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
+import { dummyForum } from '../lib/dummyData';
 
-const ForumKomunitas = ({ userId }) => {
+const ForumKomunitas = ({ userId, isDemo }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
+        if (isDemo) {
+            setMessages(dummyForum);
+            return;
+        }
+
         if (!userId) return;
         const forumCollectionRef = collection(db, `artifacts/${appId}/public/data/forum`);
         // Optimized for 2000+ users: Get last 50 messages only
@@ -21,7 +27,7 @@ const ForumKomunitas = ({ userId }) => {
             setMessages(msgs);
         }, (error) => console.error("Kesalahan listener forum:", error));
         return () => unsubscribe();
-    }, [userId]);
+    }, [userId, isDemo]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,6 +36,14 @@ const ForumKomunitas = ({ userId }) => {
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (newMessage.trim() === '' || !userId) return;
+
+        if (isDemo) {
+             const newMsg = { id: Date.now().toString(), text: newMessage, authorId: userId, timestamp: { toDate: () => new Date() } };
+             setMessages([...messages, newMsg]);
+             setNewMessage('');
+             return;
+        }
+
         await addDoc(collection(db, `artifacts/${appId}/public/data/forum`), { text: newMessage, authorId: userId, timestamp: new Date() });
         setNewMessage('');
     };
