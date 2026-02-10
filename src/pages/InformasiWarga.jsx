@@ -5,11 +5,13 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, appId } from '../lib/firebase';
 import { dummyInfo } from '../lib/dummyData';
 
-const InformasiWarga = ({ userId, isAdmin, isDemo }) => {
+const InformasiWarga = ({ userId, isAdmin, subRole, isDemo }) => {
     const [posts, setPosts] = useState([]);
     const [newPost, setNewPost] = useState('');
     const [attachmentFile, setAttachmentFile] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+
+    const canPost = isAdmin || subRole === 'humas' || subRole === 'kepolkes';
 
     useEffect(() => {
         if (isDemo) {
@@ -48,7 +50,7 @@ const InformasiWarga = ({ userId, isAdmin, isDemo }) => {
 
         await addDoc(collection(db, `artifacts/${appId}/public/data/informasi`), {
             content: newPost,
-            author: `Pengurus RT`,
+            author: subRole ? `Pengurus RT (${subRole.charAt(0).toUpperCase() + subRole.slice(1)})` : 'Pengurus RT',
             timestamp: new Date(),
             attachmentURL,
             attachmentType
@@ -62,12 +64,17 @@ const InformasiWarga = ({ userId, isAdmin, isDemo }) => {
     return (
         <div className="bg-white p-8 rounded-xl shadow-md">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Informasi & Himbauan Pengurus</h2>
-            {isAdmin && (
+            {canPost && (
                 <form onSubmit={handlePostSubmit} className="mb-8 p-4 border rounded-lg bg-gray-50">
                     <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="Tulis pengumuman baru..." className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent" rows="3"></textarea>
                     <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Lampirkan File (Opsional)</label>
-                        <input type="file" onChange={(e) => setAttachmentFile(e.target.files[0])} accept="image/png, image/jpeg, application/pdf" className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100"/>
+                        <input
+                            type="file"
+                            onChange={(e) => setAttachmentFile(e.target.files[0])}
+                            accept="image/png, image/jpeg, application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-pink-50 file:text-pink-700 hover:file:bg-pink-100"
+                        />
                         {attachmentFile && <p className="text-xs text-gray-500 mt-1">File: {attachmentFile.name}</p>}
                     </div>
                     <button type="submit" disabled={isLoading} className="mt-4 px-6 py-2 bg-pink-500 text-white font-semibold rounded-lg hover:bg-pink-600 disabled:bg-pink-300">
@@ -85,7 +92,7 @@ const InformasiWarga = ({ userId, isAdmin, isDemo }) => {
                                     <img src={post.attachmentURL} alt="Lampiran" className="rounded-lg max-w-full h-auto md:max-w-md" />
                                 ) : (
                                     <a href={post.attachmentURL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 font-semibold rounded-lg hover:bg-red-200">
-                                        <Download size={16} /> Unduh Dokumen (PDF)
+                                        <Download size={16} /> Unduh Dokumen
                                     </a>
                                 )}
                             </div>

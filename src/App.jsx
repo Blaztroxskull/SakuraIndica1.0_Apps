@@ -14,15 +14,19 @@ import RegistrasiWarga from './pages/RegistrasiWarga';
 import LayananSurat from './pages/LayananSurat';
 import LaporanKeuangan from './pages/LaporanKeuangan';
 import InformasiWarga from './pages/InformasiWarga';
-import ForumKomunitas from './pages/ForumKomunitas';
+import Marketplace from './pages/Marketplace';
 import SaluranKomunitas from './pages/SaluranKomunitas';
 import KeamananLingkungan from './pages/KeamananLingkungan';
+import Fasum from './pages/Fasum';
+import DKM from './pages/DKM';
+import Rohani from './pages/Rohani';
 import Pengaturan from './pages/Pengaturan';
 
 const App = () => {
     const [currentPage, setCurrentPage] = useState('dashboard');
     const [user, setUser] = useState(null);
     const [userRole, setUserRole] = useState(null);
+    const [userSubRole, setUserSubRole] = useState(null);
     const [isDemo, setIsDemo] = useState(false);
     const [isAuthReady, setIsAuthReady] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
@@ -45,13 +49,17 @@ const App = () => {
                      try {
                          const userDoc = await getDoc(doc(db, `users`, currentUser.uid));
                          if (userDoc.exists()) {
-                             setUserRole(userDoc.data().role);
+                             const userData = userDoc.data();
+                             setUserRole(userData.role);
+                             setUserSubRole(userData.subRole);
                          } else {
                              setUserRole('Administrator');
+                             setUserSubRole(null);
                          }
                      } catch (e) {
                          console.error("Error fetching user role:", e);
                          setUserRole('Administrator');
+                         setUserSubRole(null);
                      }
                 } else {
                     setUserRole('Warga');
@@ -110,9 +118,13 @@ const App = () => {
             case 'keuangan': return <LaporanKeuangan isAdmin={isAdmin} isDemo={isDemo} />;
             case 'informasi': return <InformasiWarga userId={user?.uid} isAdmin={isAdmin} isDemo={isDemo} />;
             case 'pengaturan': return isAdmin ? <Pengaturan isDemo={isDemo} setIsDemo={setIsDemo} /> : <div className="text-center p-8"><h2 className="text-2xl font-bold text-red-500">Akses Ditolak</h2><p className="text-gray-600 mt-2">Anda tidak memiliki izin untuk mengakses halaman ini.</p></div>;
-            case 'forum': return <ForumKomunitas userId={user?.uid} isDemo={isDemo} />;
+            case 'marketplace': return <Marketplace userId={user?.uid} isDemo={isDemo} />;
             case 'saluran': return <SaluranKomunitas isDemo={isDemo} />;
-            case 'keamanan': return <KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} isDemo={isDemo} />;
+            case 'keamanan': return <KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} userId={user?.uid} isAdmin={isAdmin} subRole={userSubRole} isDemo={isDemo} />;
+            case 'aduan': return <KeamananLingkungan onTriggerPanic={() => setShowPanicConfirm(true)} userId={user?.uid} isAdmin={isAdmin} subRole={userSubRole} isDemo={isDemo} />;
+            case 'fasum': return <Fasum subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />;
+            case 'dkm': return <DKM subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />;
+            case 'rohani': return <Rohani subRole={userSubRole} isAdmin={isAdmin} isDemo={isDemo} />;
             default: return <Dashboard isDemo={isDemo} />;
         }
     };
@@ -188,6 +200,7 @@ const App = () => {
                 logoUrl={logoUrl}
                 user={user}
                 role={userRole}
+                subRole={userSubRole}
                 onLogout={handleAdminClick}
             />
             <main className="flex-1 p-4 md:p-8 overflow-y-auto">

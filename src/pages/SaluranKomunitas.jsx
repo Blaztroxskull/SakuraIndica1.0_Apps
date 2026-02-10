@@ -9,18 +9,28 @@ const SaluranKomunitas = () => {
         { name: 'PKK', icon: HeartHandshake, description: 'Program pemberdayaan dan kesejahteraan keluarga.', color: 'purple' }
     ];
 
-    const ChannelCard = ({ name, icon: Icon, description, color }) => (
-        <div className={`p-6 rounded-xl shadow-md border-t-4 border-${color}-500 bg-white`}>
-            <div className="flex items-center mb-3">
-                <Icon size={28} className={`text-${color}-500 mr-4`} />
-                <h3 className="text-xl font-bold text-gray-800">{name}</h3>
+    const colorMap = {
+        blue: { border: 'border-blue-500', text: 'text-blue-500', bg: 'bg-blue-500', hover: 'hover:bg-blue-600' },
+        green: { border: 'border-green-500', text: 'text-green-500', bg: 'bg-green-500', hover: 'hover:bg-green-600' },
+        red: { border: 'border-red-500', text: 'text-red-500', bg: 'bg-red-500', hover: 'hover:bg-red-600' },
+        purple: { border: 'border-purple-500', text: 'text-purple-500', bg: 'bg-purple-500', hover: 'hover:bg-purple-600' }
+    };
+
+    const ChannelCard = ({ name, icon: Icon, description, color }) => {
+        const classes = colorMap[color];
+        return (
+            <div className={`p-6 rounded-xl shadow-md border-t-4 ${classes.border} bg-white`}>
+                <div className="flex items-center mb-3">
+                    <Icon size={28} className={`${classes.text} mr-4`} />
+                    <h3 className="text-xl font-bold text-gray-800">{name}</h3>
+                </div>
+                <p className="text-gray-600 mb-4">{description}</p>
+                <button className={`w-full py-2 text-sm font-semibold text-white ${classes.bg} rounded-lg ${classes.hover}`}>
+                    Lihat Selengkapnya
+                </button>
             </div>
-            <p className="text-gray-600 mb-4">{description}</p>
-            <button className={`w-full py-2 text-sm font-semibold text-white bg-${color}-500 rounded-lg hover:bg-${color}-600`}>
-                Lihat Selengkapnya
-            </button>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="bg-white p-8 rounded-xl shadow-md">

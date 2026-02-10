@@ -1,20 +1,23 @@
 import React from 'react';
-import { Home, FileText, Bell, Users, MessageSquare, Shield, Landmark, Settings, UserPlus, LogOut } from 'lucide-react';
+import { Home, FileText, Bell, Users, ShoppingBag, Shield, Landmark, Settings, UserPlus, LogOut, Tent, BookOpen, MessageCircle } from 'lucide-react';
 
-const Sidebar = ({ navigate, currentPage, isAdmin, role, user, logoUrl, onLogout }) => {
+const Sidebar = ({ navigate, currentPage, isAdmin, role, subRole, user, logoUrl, onLogout }) => {
     // Determine display role
     const displayRole = isAdmin ? 'Super Administrator' : (role || 'Warga');
-    const displaySub = isAdmin ? 'System Owner' : (user?.displayName || 'Resident');
+    const displaySub = isAdmin ? 'System Owner' : (subRole ? subRole.charAt(0).toUpperCase() + subRole.slice(1) : (user?.displayName || 'Resident'));
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: Home, adminOnly: false },
         { id: 'surat', label: 'Administrasi', icon: FileText, adminOnly: false },
         { id: 'registrasi', label: 'Data Warga', icon: UserPlus, adminOnly: false },
-        { id: 'forum', label: 'Forum Jual Beli', icon: MessageSquare, adminOnly: false },
+        { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag, adminOnly: false },
         { id: 'keuangan', label: 'Keuangan', icon: Landmark, adminOnly: false },
-        { id: 'informasi', label: 'Informasi Warga', icon: Bell, adminOnly: false },
-        { id: 'saluran', label: 'Saluran Komunitas', icon: Users, adminOnly: false },
-        { id: 'keamanan', label: 'Keamanan', icon: Shield, adminOnly: false },
+        { id: 'informasi', label: 'Komunitas (Berita)', icon: Bell, adminOnly: false }, // "Komunitas: Difokuskan untuk pengumuman"
+        { id: 'fasum', label: 'Fasilitas Umum', icon: Tent, adminOnly: false }, // New
+        { id: 'dkm', label: 'DKM Masjid', icon:  Users, adminOnly: false }, // New
+        { id: 'rohani', label: 'Kerohanian', icon: BookOpen, adminOnly: false }, // New
+        { id: 'aduan', label: 'Saran & Pengaduan', icon: Shield, adminOnly: false }, // Renamed from Keamanan
+        { id: 'saluran', label: 'Saluran Komunitas', icon: MessageCircle, adminOnly: false },
         { id: 'pengaturan', label: 'Pengaturan', icon: Settings, adminOnly: true },
     ];
 

@@ -13,3 +13,8 @@ export const dummyForum = [
     { id: '1', text: 'Ada yang jual galon air mineral?', authorId: 'user123', timestamp: { toDate: () => new Date('2023-10-26T14:30:00') } },
     { id: '2', text: 'Saya jual, bisa diantar ke blok B2.', authorId: 'user456', timestamp: { toDate: () => new Date('2023-10-26T14:35:00') } },
 ];
+
+export const dummyMarketplace = [
+    { id: '1', title: 'Galon Air Mineral', description: 'Air mineral kemasan galon 19L', price: 20000, stock: 10, phone: '628123456789', sellerId: 'user1', hasQris: false, productImageUrl: null, timestamp: { toDate: () => new Date() } },
+    { id: '2', title: 'Keripik Pisang', description: 'Keripik pisang manis gurih 250gr', price: 15000, stock: 5, phone: '628987654321', sellerId: 'user2', hasQris: true, productImageUrl: null, timestamp: { toDate: () => new Date() } },
+];

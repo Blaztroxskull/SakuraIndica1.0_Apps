@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { X, Eye, EyeOff } from 'lucide-react';
+import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { collection, query, where, getDocs, updateDoc, increment, doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../lib/firebase';
 
 export const Modal = ({ show, onClose, title, children }) => {
     if (!show) return null;
@@ -21,6 +22,7 @@ export const Modal = ({ show, onClose, title, children }) => {
 export const AdminLoginModal = ({ show, onClose }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -35,14 +37,61 @@ export const AdminLoginModal = ({ show, onClose }) => {
         }
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            // Attempt login
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Check if locked
+            const userRef = doc(db, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                if (userData.isLocked) {
+                    await signOut(auth);
+                    setError('Akun Anda terkunci. Hubungi Super Admin.');
+                    setIsLoading(false);
+                    return;
+                }
+
+                // Reset failed attempts on success
+                await updateDoc(userRef, { failedLoginAttempts: 0 });
+            }
+
             onClose();
             setUsername('');
             setPassword('');
             setError('');
         } catch (err) {
             console.error("Login failed:", err);
-            setError('Login gagal. Periksa username/email dan password Anda.');
+
+            // Handle Failed Attempts Logic
+            // Note: This requires 'users' collection to be queryable/writable by unauthenticated users for this specific flow
+            // or we use a Cloud Function. Implementing client-side best effort.
+            try {
+                const q = query(collection(db, 'users'), where('email', '==', email));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    const userDoc = querySnapshot.docs[0];
+                    const currentAttempts = (userDoc.data().failedLoginAttempts || 0) + 1;
+
+                    await updateDoc(userDoc.ref, {
+                        failedLoginAttempts: increment(1),
+                        isLocked: currentAttempts >= 3
+                    });
+
+                    if (currentAttempts >= 3) {
+                        setError('Akun Anda telah dikunci karena terlalu banyak percobaan gagal.');
+                    } else {
+                        setError(`Password salah. Sisa percobaan: ${3 - currentAttempts}`);
+                    }
+                } else {
+                     setError('Login gagal. Periksa username/email dan password Anda.');
+                }
+            } catch (updateErr) {
+                // Fallback if permission denied
+                 setError('Login gagal. Periksa username/email dan password Anda.');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -52,8 +101,23 @@ export const AdminLoginModal = ({ show, onClose }) => {
         <Modal show={show} onClose={onClose} title="Login Administrator">
             <div className="p-4 space-y-4">
                 <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Email atau Username" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400" />
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400" />
-                {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                <div className="relative">
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Password"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-400 pr-10"
+                    />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                </div>
+                {error && <p className="text-red-500 text-sm text-center font-bold">{error}</p>}
                 <button onClick={handleLogin} disabled={isLoading} className="w-full px-6 py-3 font-semibold text-white bg-pink-600 rounded-lg hover:bg-pink-700 disabled:bg-pink-400">
                     {isLoading ? 'Memproses...' : 'Login'}
                 </button>
@@ -75,5 +139,50 @@ export const ConfirmationModal = ({ show, onClose, onConfirm, title, message }) 
                 </div>
             </div>
         </div>
+    );
+};
+
+export const SecurityWarningModal = ({ show, onClose, onSend, username }) => {
+    const [message, setMessage] = useState('');
+    const [blockUser, setBlockUser] = useState(false);
+
+    if (!show) return null;
+
+    return (
+        <Modal show={show} onClose={onClose} title="Peringatan Keamanan">
+            <div className="space-y-4">
+                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                    <p className="text-sm text-yellow-700">
+                        Anda akan mengirim peringatan kepada <strong>{username}</strong>.
+                    </p>
+                </div>
+                <textarea
+                    className="w-full p-2 border rounded-md"
+                    rows="3"
+                    placeholder="Isi pesan peringatan..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                />
+                <div className="flex items-center space-x-2">
+                    <input
+                        type="checkbox"
+                        id="blockUser"
+                        checked={blockUser}
+                        onChange={(e) => setBlockUser(e.target.checked)}
+                        className="rounded text-red-600 focus:ring-red-500"
+                    />
+                    <label htmlFor="blockUser" className="text-sm font-medium text-red-700">Blokir akun ini secara permanen</label>
+                </div>
+                <div className="flex justify-end space-x-2 mt-4">
+                    <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800">Batal</button>
+                    <button
+                        onClick={() => onSend(message, blockUser)}
+                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    >
+                        Kirim & Terapkan
+                    </button>
+                </div>
+            </div>
+        </Modal>
     );
 };
