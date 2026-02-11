@@ -7,7 +7,8 @@ vi.mock('./lib/firebase', () => ({
   auth: { currentUser: null },
   db: {},
   storage: {},
-  appId: 'test-app'
+  appId: 'test-app',
+  isConfigValid: true
 }));
 
 // Mock Firebase Auth functions
@@ -28,6 +29,7 @@ vi.mock('firebase/firestore', () => ({
   setDoc: vi.fn(),
   query: vi.fn(),
   addDoc: vi.fn(),
+  getDoc: vi.fn(),
 }));
 
 // Mock Storage

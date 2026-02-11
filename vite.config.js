@@ -10,5 +10,10 @@ export default defineConfig({
   },
   server: {
     historyApiFallback: true, // For dev server routing
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
   }
 })

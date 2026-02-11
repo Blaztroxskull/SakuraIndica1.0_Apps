@@ -3,7 +3,7 @@ import { Siren } from 'lucide-react';
 import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { db, auth, appId } from './lib/firebase';
+import { db, auth, appId, isConfigValid } from './lib/firebase';
 
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -38,7 +38,26 @@ const AppContent = () => {
     const audioRef = useRef(null);
     const location = useLocation();
 
+    // Handling missing config gracefully
+    if (!isConfigValid) {
+        return (
+            <div className="flex flex-col justify-center items-center h-screen p-8 text-center bg-gray-50">
+                <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+                    <h1 className="text-2xl font-bold text-red-600 mb-4">Konfigurasi Sistem Belum Lengkap</h1>
+                    <p className="text-gray-700 mb-6">
+                        Aplikasi tidak dapat terhubung ke server database. Mohon hubungi administrator untuk memeriksa konfigurasi environment (.env).
+                    </p>
+                    <div className="text-sm text-gray-500 border-t pt-4">
+                        Code: MISSING_FIREBASE_CONFIG
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     useEffect(() => {
+        if (!auth) return;
+
         const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
             if (currentUser) {
                 setUser(currentUser);
@@ -81,31 +100,35 @@ const AppContent = () => {
     }, []);
 
     useEffect(() => {
-        if (!isAuthReady) return;
+        if (!isAuthReady || !db) return;
 
-        const panicRef = doc(db, `artifacts/${appId}/public/data/panic`, 'status');
-        const unsubscribePanic = onSnapshot(panicRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setIsPanicMode(data.active);
-                setPanicInfo(data);
-                if (data.active) {
-                    audioRef.current?.play().catch(e => console.error("Audio play failed:", e));
-                } else {
-                    audioRef.current?.pause();
-                    if(audioRef.current) audioRef.current.currentTime = 0;
+        try {
+            const panicRef = doc(db, `artifacts/${appId}/public/data/panic`, 'status');
+            const unsubscribePanic = onSnapshot(panicRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    setIsPanicMode(data.active);
+                    setPanicInfo(data);
+                    if (data.active) {
+                        audioRef.current?.play().catch(e => console.error("Audio play failed:", e));
+                    } else {
+                        audioRef.current?.pause();
+                        if(audioRef.current) audioRef.current.currentTime = 0;
+                    }
                 }
-            }
-        }, (error) => console.error("Kesalahan listener panik:", error));
+            }, (error) => console.error("Kesalahan listener panik:", error));
 
-        const logoRef = doc(db, `artifacts/${appId}/public/data/config`, 'appLogo');
-        const unsubscribeLogo = onSnapshot(logoRef, (docSnap) => {
-            if (docSnap.exists()) {
-                setLogoUrl(docSnap.data().url);
-            }
-        }, (error) => console.error("Kesalahan listener logo:", error));
+            const logoRef = doc(db, `artifacts/${appId}/public/data/config`, 'appLogo');
+            const unsubscribeLogo = onSnapshot(logoRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setLogoUrl(docSnap.data().url);
+                }
+            }, (error) => console.error("Kesalahan listener logo:", error));
 
-        return () => { unsubscribePanic(); unsubscribeLogo(); };
+            return () => { unsubscribePanic(); unsubscribeLogo(); };
+        } catch (e) {
+            console.error("Error setting up listeners:", e);
+        }
     }, [isAuthReady]);
 
 
