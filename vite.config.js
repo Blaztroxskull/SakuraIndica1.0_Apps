@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/',
   plugins: [react()],
   build: {
-    outDir: 'build', // Changed from 'dist' to 'build' to match standard React project defaults on Vercel
+    outDir: 'dist',
     chunkSizeWarningLimit: 1000,
     assetsDir: 'assets',
     sourcemap: false,
