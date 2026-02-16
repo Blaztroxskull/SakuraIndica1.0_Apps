@@ -102,17 +102,19 @@ const KeamananLingkungan = ({ onTriggerPanic, userId, isAdmin, subRole, isDemo }
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white p-6 rounded-xl shadow-md">
-                            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                <Video className="text-blue-500"/> Pantau CCTV Lingkungan
-                            </h3>
-                            <div className="bg-gray-100 h-48 rounded-lg flex items-center justify-center mb-4">
-                                <p className="text-gray-400 text-sm">Preview CCTV tidak tersedia</p>
+                        {canManageReports && (
+                            <div className="bg-white p-6 rounded-xl shadow-md">
+                                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                    <Video className="text-blue-500"/> Pantau CCTV Lingkungan
+                                </h3>
+                                <div className="bg-gray-100 h-48 rounded-lg flex items-center justify-center mb-4">
+                                    <p className="text-gray-400 text-sm">Preview CCTV tidak tersedia</p>
+                                </div>
+                                <a href={cctvLink} target="_blank" rel="noopener noreferrer" className={`w-full block text-center py-2 font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-600 ${cctvLink === '#' ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                    {cctvLink !== '#' ? 'Buka Stream CCTV' : 'Link Belum Diset'}
+                                </a>
                             </div>
-                            <a href={cctvLink} target="_blank" rel="noopener noreferrer" className={`w-full block text-center py-2 font-semibold text-white bg-blue-500 rounded-lg hover:bg-blue-600 ${cctvLink === '#' ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                {cctvLink !== '#' ? 'Buka Stream CCTV' : 'Link Belum Diset'}
-                            </a>
-                        </div>
+                        )}
                         <div className="bg-white p-6 rounded-xl shadow-md">
                             <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                                 <Phone className="text-green-500"/> Nomor Penting
