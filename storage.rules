@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAnonymous() {
+      return request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && !isAnonymous();
+    }
+
+    // Registrations (KTP, KK)
+    match /registrations/{userId}/{fileName} {
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+    }
+
+    // Attachments (Service Requests)
+    match /attachments/{userId}/{fileName} {
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+    }
+
+    // Informasi (Announcements) - Read all, Write Admin
+    match /informasi/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Config (App Logo) - Read all, Write Admin
+    match /config/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

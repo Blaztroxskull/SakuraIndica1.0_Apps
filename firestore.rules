@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAnonymous() {
+      return request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && !isAnonymous();
+    }
+
+    function isSubRole(role) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.subRole == role;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Users collection (Root level)
+    match /users/{userId} {
+      // Authenticated users can read their own profile. Admin can read all.
+      allow read: if isOwner(userId) || isAdmin();
+      // Only Admin can create/update user roles/profiles directly via Admin Panel
+      // User can update basic info? For now restrict to Admin for simplicity
+      allow write: if isAdmin();
+    }
+
+    // Allow access to the specific app path
+    match /artifacts/{appId}/public/data {
+
+      // Panic Button (S.O.S) - accessible by all residents
+      match /panic/status {
+        allow read, write: if isAuthenticated();
+      }
+
+      // Configuration (App Logo, CCTV Link) - Read by all, Write by Admin
+      match /config/{configId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+
+      // Information/Announcements - Read by all, Write by Admin, Humas, Kepolkes
+      match /informasi/{infoId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isSubRole('humas') || isSubRole('kepolkes');
+      }
+
+      // Registrations - Create by all (even Anon), Read by Admin or Owner
+      match /registrations/{regId} {
+        allow create: if true; // Allow anyone to register
+        allow read: if isAdmin() || (isAuthenticated() && resource.data.registeredBy == request.auth.uid);
+        allow update, delete: if isAdmin();
+      }
+
+      // Service Requests - Create by all, Read by Admin or Owner
+      match /service_requests/{reqId} {
+        allow create: if isAuthenticated();
+        allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+        allow update, delete: if isAdmin();
+      }
+
+      // Marketplace (New) - Create by all residents, Read by all, Update/Delete by Admin or Seller
+      match /marketplace/{itemId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.sellerId == request.auth.uid);
+      }
+
+      // Aduan/Keamanan (New) - Create by all, Read by Admin/Owner, Update by Admin/Keamanan/RT
+      match /aduan/{aduanId} {
+        allow create: if isAuthenticated();
+        allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid) || isSubRole('keamanan') || isSubRole('rt');
+        allow update: if isAdmin() || isSubRole('keamanan') || isSubRole('rt');
+        allow delete: if isAdmin();
+      }
+
+      // Fasum (New) - Read by all, Write by Admin or Sapras
+      match /fasum/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isSubRole('sapras');
+      }
+
+      // DKM Jumat (New) - Read by all, Write by Admin or DKM
+      match /dkm_jumat/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isSubRole('dkm');
+      }
+
+      // DKM Kajian (New) - Read by all, Write by Admin or DKM
+      match /dkm_kajian/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isSubRole('dkm');
+      }
+
+      // Rohani (New) - Read by all, Write by Admin or Kerohanian
+      match /rohani/{itemId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin() || isSubRole('kerohanian');
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+
+> sakura-indica-app@1.0.0 preview
+> vite preview --port 4173
+
+Port 4173 is in use, trying another one...
+Port 4174 is in use, trying another one...
+  ➜  Local:   http://localhost:4175/
+  ➜  Network: use --host to expose
